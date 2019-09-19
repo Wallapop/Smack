@@ -17,6 +17,19 @@
 
 package org.jivesoftware.smack;
 
+import org.jivesoftware.smack.packet.Session;
+import org.jivesoftware.smack.proxy.ProxyInfo;
+import org.jivesoftware.smack.sasl.SASLMechanism;
+import org.jivesoftware.smack.sasl.core.SASLAnonymous;
+import org.jivesoftware.smack.util.CollectionUtil;
+import org.jivesoftware.smack.util.Objects;
+import org.jivesoftware.smack.util.StringUtils;
+import org.jxmpp.jid.DomainBareJid;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.parts.Resourcepart;
+import org.jxmpp.stringprep.XmppStringprepException;
+
 import java.net.InetAddress;
 import java.security.KeyStore;
 import java.util.Arrays;
@@ -30,20 +43,6 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 import javax.security.auth.callback.CallbackHandler;
-
-import org.jivesoftware.smack.packet.Session;
-import org.jivesoftware.smack.proxy.ProxyInfo;
-import org.jivesoftware.smack.sasl.SASLMechanism;
-import org.jivesoftware.smack.sasl.core.SASLAnonymous;
-import org.jivesoftware.smack.util.CollectionUtil;
-import org.jivesoftware.smack.util.Objects;
-import org.jivesoftware.smack.util.StringUtils;
-
-import org.jxmpp.jid.DomainBareJid;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.jid.parts.Resourcepart;
-import org.jxmpp.stringprep.XmppStringprepException;
 
 /**
  * Configuration to use while establishing the connection to the server.
@@ -64,6 +63,7 @@ public abstract class ConnectionConfiguration {
      * talk.google.com and the serviceName would be gmail.com.
      */
     protected final DomainBareJid xmppServiceDomain;
+    protected final DomainBareJid fallbackServiceDomain;
 
     protected final InetAddress hostAddress;
     protected final String host;
@@ -138,6 +138,7 @@ public abstract class ConnectionConfiguration {
         if (xmppServiceDomain == null) {
             throw new IllegalArgumentException("Must define the XMPP domain");
         }
+        fallbackServiceDomain = builder.fallbackServiceDomain;
         hostAddress = builder.hostAddress;
         host = builder.host;
         port = builder.port;
@@ -191,6 +192,14 @@ public abstract class ConnectionConfiguration {
     public DomainBareJid getXMPPServiceDomain() {
         return xmppServiceDomain;
     }
+
+    /**
+     * Returns the preferred fallback XMPP domain used by this configuration.
+     * @return the preferred fallback XMPP domain.
+     */
+    public DomainBareJid getFallbackServiceDomain() {
+        return fallbackServiceDomain;
+      }
 
     /**
      * Returns the TLS security mode used when making the connection. By default,
@@ -523,6 +532,7 @@ public abstract class ConnectionConfiguration {
         private boolean debuggerEnabled = SmackConfiguration.DEBUG;
         private SocketFactory socketFactory;
         private DomainBareJid xmppServiceDomain;
+        private DomainBareJid fallbackServiceDomain;
         private InetAddress hostAddress;
         private String host;
         private int port = 5222;
@@ -583,6 +593,16 @@ public abstract class ConnectionConfiguration {
          */
         public B setXmppDomain(String xmppServiceDomain) throws XmppStringprepException {
             this.xmppServiceDomain = JidCreate.domainBareFrom(xmppServiceDomain);
+            return getThis();
+        }
+
+        public B setFallbackDomain(DomainBareJid fallbackServiceDomain) {
+            this.fallbackServiceDomain = fallbackServiceDomain;
+            return getThis();
+        }
+
+        public B setFallbackDomain(String xmppServiceDomain) throws XmppStringprepException {
+            this.fallbackServiceDomain = JidCreate.domainBareFrom(xmppServiceDomain);
             return getThis();
         }
 

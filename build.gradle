@@ -1,5 +1,3 @@
-import org.gradle.plugins.signing.Sign
-
 buildscript {
     repositories {
         jcenter()

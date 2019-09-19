@@ -16,6 +16,12 @@
  */
 package org.jivesoftware.smack.util;
 
+import org.jivesoftware.smack.ConnectionConfiguration.DnssecMode;
+import org.jivesoftware.smack.util.dns.DNSResolver;
+import org.jivesoftware.smack.util.dns.HostAddress;
+import org.jivesoftware.smack.util.dns.SRVRecord;
+import org.jivesoftware.smack.util.dns.SmackDaneProvider;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -24,12 +30,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.jivesoftware.smack.ConnectionConfiguration.DnssecMode;
-import org.jivesoftware.smack.util.dns.DNSResolver;
-import org.jivesoftware.smack.util.dns.HostAddress;
-import org.jivesoftware.smack.util.dns.SRVRecord;
-import org.jivesoftware.smack.util.dns.SmackDaneProvider;
 
 /**
  * Utility class to perform DNS lookups for XMPP services.
@@ -131,10 +131,10 @@ public class DNSUtil {
      * @return List of HostAddress, which encompasses the hostname and port that the
      *      XMPP server can be reached at for the specified domain.
      */
-    public static List<HostAddress> resolveXMPPServiceDomain(String domain, List<HostAddress> failedAddresses, DnssecMode dnssecMode) {
+    public static List<HostAddress> resolveXMPPServiceDomain(String domain, String fallback, List<HostAddress> failedAddresses, DnssecMode dnssecMode) {
         domain = idnaTransformer.transform(domain);
 
-        return resolveDomain(domain, DomainType.Client, failedAddresses, dnssecMode);
+        return resolveDomain(domain, fallback, DomainType.Client, failedAddresses, dnssecMode);
     }
 
     /**
@@ -152,21 +152,24 @@ public class DNSUtil {
      * @return List of HostAddress, which encompasses the hostname and port that the
      *      XMPP server can be reached at for the specified domain.
      */
-    public static List<HostAddress> resolveXMPPServerDomain(String domain, List<HostAddress> failedAddresses, DnssecMode dnssecMode) {
+    public static List<HostAddress> resolveXMPPServerDomain(String domain, String fallback, List<HostAddress> failedAddresses, DnssecMode dnssecMode) {
         domain = idnaTransformer.transform(domain);
 
-        return resolveDomain(domain, DomainType.Server, failedAddresses, dnssecMode);
+        return resolveDomain(domain, fallback, DomainType.Server, failedAddresses, dnssecMode);
     }
 
     /**
-     * 
+     *
      * @param domain the domain.
      * @param domainType the XMPP domain type, server or client.
      * @param failedAddresses a list that will be populated with host addresses that failed to resolve.
      * @return a list of resolver host addresses for this domain.
      */
-    private static List<HostAddress> resolveDomain(String domain, DomainType domainType,
-                    List<HostAddress> failedAddresses, DnssecMode dnssecMode) {
+    private static List<HostAddress> resolveDomain(String domain,
+                                                   String fallback,
+                                                   DomainType domainType,
+                                                   List<HostAddress> failedAddresses,
+                                                   DnssecMode dnssecMode) {
         if (dnsResolver == null) {
             throw new IllegalStateException("No DNS Resolver active in Smack");
         }
@@ -210,11 +213,17 @@ public class DNSUtil {
             break;
         }
         // Step two: Add the hostname to the end of the list
+      if (fallback != null) {
+        HostAddress hostAddress = dnsResolver.lookupHostAddress(fallback, defaultPort, failedAddresses, dnssecMode);
+        if (hostAddress != null) {
+          addresses.add(hostAddress);
+        }
+      } else {
         HostAddress hostAddress = dnsResolver.lookupHostAddress(domain, defaultPort, failedAddresses, dnssecMode);
         if (hostAddress != null) {
-            addresses.add(hostAddress);
+          addresses.add(hostAddress);
         }
-
+      }
         return addresses;
     }
 
@@ -222,7 +231,7 @@ public class DNSUtil {
      * Sort a given list of SRVRecords as described in RFC 2782
      * Note that we follow the RFC with one exception. In a group of the same priority, only the first entry
      * is calculated by random. The others are ore simply ordered by their priority.
-     * 
+     *
      * @param records
      * @return the list of resolved HostAddresses
      */

@@ -21,11 +21,11 @@ import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-public class CharSequenceEquals extends TypeSafeMatcher<CharSequence> {
+public class CharsequenceEquals extends TypeSafeMatcher<CharSequence> {
 
     private final String charSequenceString;
 
-    public CharSequenceEquals(CharSequence charSequence) {
+    public CharsequenceEquals(CharSequence charSequence) {
         charSequenceString = charSequence.toString();
     }
 
@@ -42,6 +42,6 @@ public class CharSequenceEquals extends TypeSafeMatcher<CharSequence> {
 
     @Factory
     public static Matcher<CharSequence> equalsCharSequence(CharSequence charSequence) {
-        return new CharSequenceEquals(charSequence);
+        return new CharsequenceEquals(charSequence);
     }
 }
